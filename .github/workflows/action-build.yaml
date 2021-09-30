@@ -20,8 +20,8 @@ jobs:
         uses: docker/login-action@v1 
         with:
           registry: cr.yandex
-          username: oauth
-          password: AQAAAAATTC3vAATuwaw_MdPUckVYgK2KBqWa1Y8
+          username: ${{ sercrets.YCR_LOGIN }}
+          password: ${{ sercrets.YCR_PASS }}
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
