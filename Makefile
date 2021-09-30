@@ -1,2 +1,2 @@
 test:
-	go test .\tests\methods_test.go
+	go test tests/methods_test.go
