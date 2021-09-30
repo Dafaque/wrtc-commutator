@@ -10,4 +10,4 @@ jobs:
     steps:
       - name: build
         run: |
-          docker build -t cr.yandex/crp7eheeka3pphv65e5o/commutator:${{github.ref}}
+          docker build -t cr.yandex/crp7eheeka3pphv65e5o/commutator:${$GITHUB_REF#/refs/tags/*}
