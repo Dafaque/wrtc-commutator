@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-20.04
     # container: docker:latest
     steps:
+      - name: Extract tag name
+        shell: bash
+        run: echo "##[set-output name=tag;]$(echo ${GITHUB_REF#refs/tags/})"
+        id: extract_tag
       - name: build
         run: |
-          docker build -t cr.yandex/crp7eheeka3pphv65e5o/commutator:$($GITHUB_REF#/refs/tags/*)
+          docker build -t cr.yandex/crp7eheeka3pphv65e5o/commutator:${{ steps.extract_tag.outputs.tag }}
