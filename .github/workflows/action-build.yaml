@@ -14,4 +14,4 @@ jobs:
         id: extract_tag
       - name: build
         run: |
-          docker build -t cr.yandex/crp7eheeka3pphv65e5o/commutator:${{ steps.extract_tag.outputs.tag }}
+          docker build -t cr.yandex/crp7eheeka3pphv65e5o/commutator:${{ steps.extract_tag.outputs.tag }} .
