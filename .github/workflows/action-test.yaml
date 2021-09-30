@@ -1,8 +1,5 @@
-name: Main Pipeline
+name: Test
 on:
-  create:
-    tags:
-      - 0.*.*
   push:
     branches:
       - main

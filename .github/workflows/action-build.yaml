@@ -1,0 +1,13 @@
+name: Build
+on:
+  create:
+    tag:
+      - 0.*
+jobs:
+  Build:
+    runs-on: ubuntu-20.04
+    container: docker:latest
+    steps:
+      - name: build
+        run: |
+          docker build -t cr.yandex/crp7eheeka3pphv65e5o/commutator:${{ env.GITHUB_REF }}
