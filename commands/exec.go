@@ -9,6 +9,12 @@ import (
 func Exec(ws *websocket.Conn, payload []byte) {
 	a, s := utf8.DecodeRune(payload)
 	if fn, exists := exec[a]; exists {
-		fn(ws, payload[s:])
+
+		err := fn(ws, payload[s:])
+		if err != nil {
+			ws.WriteMessage(websocket.TextMessage, []byte("!"+err.Error()))
+		}
+		return
 	}
+	ws.WriteMessage(websocket.TextMessage, []byte("!NEF"))
 }

@@ -34,6 +34,5 @@ func main() {
 		BaseContext: servertools.MakeContextForListener,
 		ConnContext: servertools.MakeContextForConnection,
 	}
-
 	panic(server.ListenAndServe())
 }

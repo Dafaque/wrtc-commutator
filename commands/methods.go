@@ -38,8 +38,14 @@ func Online(ws *websocket.Conn, args []byte) error {
 	if e != nil {
 		return e
 	}
-	global.Connections[id] = ws
+	if _, exists := global.Users[global.UserIdentifyer(id)]; exists {
+		return UserNameAleadyExists()
+	}
+	global.Users[global.UserIdentifyer(id)] = ws
 
-	println("Online", "with:", id)
+	ws.SetCloseHandler(func(code int, text string) error {
+		delete(global.Users, global.UserIdentifyer(id))
+		return ws.Close()
+	})
 	return nil
 }
