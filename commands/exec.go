@@ -1,14 +1,16 @@
 package commands
 
 import (
+	"commutator/connection"
 	"unicode/utf8"
-
-	"github.com/gorilla/websocket"
 )
 
-func Exec(ws *websocket.Conn, payload []byte) {
+func Exec(ws *connection.Connection, payload []byte) {
 	a, s := utf8.DecodeRune(payload)
 	if fn, exists := exec[a]; exists {
-		fn(ws, payload[s:])
+		if err := fn(ws, payload[s:]); err != nil {
+			ws.WriteMessage([]byte(err.Error()))
+			ws.Close()
+		}
 	}
 }

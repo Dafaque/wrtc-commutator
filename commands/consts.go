@@ -1,6 +1,8 @@
 package commands
 
-import "github.com/gorilla/websocket"
+import (
+	"commutator/connection"
+)
 
 const (
 	METHOD_ONLINE rune = 43
@@ -8,7 +10,14 @@ const (
 	METHOD_ANSWER rune = 60
 )
 
-type WSHandler func(*websocket.Conn, []byte) error
+var (
+	ARG_TO   []byte = []byte{116, 111}
+	ARG_WITH []byte = []byte{119, 105, 116, 104}
+
+	VAL_STAR []byte = []byte{42}
+)
+
+type WSHandler func(*connection.Connection, []byte) error
 
 var exec map[rune]WSHandler = map[rune]WSHandler{
 	METHOD_ONLINE: Online,

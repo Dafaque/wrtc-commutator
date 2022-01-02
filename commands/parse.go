@@ -2,15 +2,15 @@ package commands
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 )
 
 const (
-	SCOPE_BEGIN rune = 91
-	SCOPE_END   rune = 93
+	SCOPE_BEGIN byte = 91
+	SCOPE_END   byte = 93
 )
 
-func parseArg(kw string, src *[]byte) (value string, err error) {
+func parseArg(kw []byte, src *[]byte) (value []byte, err error) {
 
 	var token_found bool = false
 
@@ -18,8 +18,7 @@ func parseArg(kw string, src *[]byte) (value string, err error) {
 	var scopeEndCount int = 0
 
 	var argBeginIdx int = 0
-	var srcString = string(*src)
-	for idx, r := range srcString {
+	for idx, r := range *src {
 		if r == SCOPE_BEGIN {
 			scopeBeginCount++
 			continue
@@ -33,22 +32,21 @@ func parseArg(kw string, src *[]byte) (value string, err error) {
 			}
 			continue
 		}
-
-		value += string(r)
+		if value == nil {
+			value = []byte{}
+		}
+		value = append(value, r)
 
 		if !token_found {
-			if value == kw {
-				value = ""
+			if bytes.EqualFold(value, kw) {
+				value = nil
 				argBeginIdx = idx + 1 - len(kw)
 			}
 			continue
 		}
 	}
 
-	err = fmt.Errorf("syntax error")
-	value = ""
+	err = errors.New("syntax error")
+	value = nil
 	return
 }
-
-// for tests
-var ForTestingOnly = parseArg

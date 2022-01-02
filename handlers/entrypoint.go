@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	servertools "commutator/server_tools"
+	"commutator/commands"
+	"commutator/connection"
 	"net/http"
-
-	"github.com/gorilla/websocket"
 )
 
 func Entrypoint(w http.ResponseWriter, r *http.Request) {
@@ -17,23 +16,17 @@ func Entrypoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ws *websocket.Conn
-	// TODO response header
-
-	ws, err := servertools.Upgrader.Upgrade(w, r, nil)
-
+	conn, err := connection.NewConnection(w, r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
 		return
 	}
 
-	// TODO
-	ws.SetCloseHandler(nil)
-	ws.SetPingHandler(nil)
-	ws.SetPongHandler(nil)
-
 	for {
-		// _, payload, err := ws.ReadMessage()
+		_, payload, errReadMessage := conn.ReadMessage()
+		if errReadMessage != nil {
+			conn.Close()
+			return
+		}
+		commands.Exec(conn, payload)
 	}
 }

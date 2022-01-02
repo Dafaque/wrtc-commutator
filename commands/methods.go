@@ -1,45 +1,72 @@
 package commands
 
 import (
-	"commutator/global"
+	"bytes"
+	"commutator/connection"
+	"commutator/messages"
 
-	"github.com/gorilla/websocket"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
-func SendOffer(ws *websocket.Conn, args []byte) error {
-	to, e := parseArg("to", &args)
+func SendOffer(ws *connection.Connection, args []byte) error {
+	to, e := parseArg(ARG_TO, &args)
 	if e != nil {
 		return e
 	}
-	p, e := parseArg("with", &args)
+	p, e := parseArg(ARG_WITH, &args)
 	if e != nil {
 		return e
 	}
-	println("SendOffer", "to:", to, "with:", p)
+	println("SendOffer", "to:", string(to), "with:", string(p))
+
+	messages.NewPublsher().Broadcast(messages.NewMessage(to, []byte(ws.ID), p, []byte{}))
+
 	return nil
 }
 
-func SendAnswer(ws *websocket.Conn, args []byte) error {
-	to, e := parseArg("to", &args)
+func SendAnswer(ws *connection.Connection, args []byte) error {
+	to, e := parseArg(ARG_TO, &args)
 	if e != nil {
 		return e
 	}
-	p, e := parseArg("with", &args)
+	p, e := parseArg(ARG_WITH, &args)
 	if e != nil {
 		return e
 	}
-	println("SendAnswer", "to:", to, "with:", p)
+	println("SendAnswer", "to:", string(to), "with:", string(p))
 	return nil
 }
 
-func Online(ws *websocket.Conn, args []byte) error {
+func Online(ws *connection.Connection, args []byte) error {
 	//TODO validate args
-	id, e := parseArg("with", &args)
+	id, e := parseArg(ARG_WITH, &args)
 	if e != nil {
 		return e
 	}
-	global.Connections[id] = ws
+	ws.ID = id
+	println("Online", "with:", string(id))
 
-	println("Online", "with:", id)
+	pub := messages.NewPublsher()
+	con := messages.NewConsumer()
+	pub.Consume(con)
+	defer pub.Unconsume(con)
+	for {
+		println("cycle")
+		msg, err := con.Read()
+		if err != nil {
+			ws.Close()
+			break
+		}
+		if bytes.EqualFold(msg.To, ws.ID) || bytes.EqualFold(msg.To, VAL_STAR) {
+			b, err := msgpack.Marshal(msg)
+			if err != nil {
+				ws.WriteMessage([]byte(err.Error()))
+			}
+			if errWriteMessage := ws.WriteMessage(b); errWriteMessage != nil {
+				ws.Close()
+				println("err", errWriteMessage)
+			}
+		}
+	}
 	return nil
 }
