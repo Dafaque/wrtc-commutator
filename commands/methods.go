@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"commutator/connection"
 	"commutator/messages"
-	"encoding/hex"
 	"errors"
-
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 func SendOffer(ws *connection.Connection, args []byte) error {
@@ -93,14 +90,11 @@ func Online(ws *connection.Connection, args []byte) error {
 				break
 			}
 			if bytes.EqualFold(msg.To, ws.ID) || bytes.EqualFold(msg.To, VAL_STAR) {
-				b, errMarshal := msgpack.Marshal(msg)
+				b, errMarshal := Serialize(msg)
 				if err != nil {
 					ws.Close(errMarshal)
 					break
 				}
-
-				// TODO: TMP
-				b = []byte(hex.EncodeToString(b))
 
 				if errWriteMessage := ws.WriteMessage(b); errWriteMessage != nil {
 					ws.Close(errWriteMessage)
