@@ -2,26 +2,27 @@ package commands
 
 import (
 	"bytes"
+	"commutator/connection"
 	"fmt"
 	"testing"
 )
 
 func TestSendOffer(t *testing.T) {
-	var err error = SendOffer(nil, []byte("to[asdfasdf] with[disis an offer]"))
+	var err error = SendOffer(&connection.Connection{}, []byte("to[asdfasdf] with[disis an offer]"))
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestSendAnswer(t *testing.T) {
-	var err error = SendAnswer(nil, []byte("to[asdfasdf] with[disis an answer]"))
+	var err error = SendAnswer(&connection.Connection{}, []byte("to[asdfasdf] with[disis an answer]"))
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestSendOnline(t *testing.T) {
-	var err error = Online(nil, []byte("with[salouronili] $$$salamo aleyyqoomo"))
+	var err error = Online(&connection.Connection{}, []byte("with[salouronili] $$$salamo aleyyqoomo"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +47,7 @@ func TestParseArg(t *testing.T) {
 }
 
 func BenchmarkExec(b *testing.B) {
-	Exec(nil, []byte("+with[salouronili] $$$salamo aleyyqoomo"))
-	Exec(nil, []byte(">to[asdfasdf] with[disis an offer]"))
-	Exec(nil, []byte("<to[asdfasf] with[disisan ansua]"))
+	Exec(&connection.Connection{}, []byte("+with[salouronili] $$$salamo aleyyqoomo"))
+	Exec(&connection.Connection{}, []byte(">to[asdfasdf] with[disis an offer]"))
+	Exec(&connection.Connection{}, []byte("<to[asdfasf] with[disisan ansua]"))
 }

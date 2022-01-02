@@ -16,7 +16,7 @@ func SendOffer(ws *connection.Connection, args []byte) error {
 	if e != nil {
 		return e
 	}
-	if bytes.EqualFold(p, VAL_STAR) {
+	if bytes.EqualFold(to, VAL_STAR) {
 		return errors.New("invalid target")
 	}
 
@@ -43,7 +43,7 @@ func SendAnswer(ws *connection.Connection, args []byte) error {
 	if e != nil {
 		return e
 	}
-	if bytes.EqualFold(p, VAL_STAR) {
+	if bytes.EqualFold(to, VAL_STAR) {
 		return errors.New("invalid target")
 	}
 	println("SendAnswer", "to:", string(to), "with:", string(p))
