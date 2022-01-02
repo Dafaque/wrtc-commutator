@@ -8,7 +8,7 @@ import (
 
 func OnConnectionStateChanged(c net.Conn, s http.ConnState) {
 	// TODO
-	println(c.RemoteAddr().String(), " changed conn state to", s)
+	println(c.RemoteAddr().String(), "changed conn state to", s)
 }
 
 func MakeContextForListener(l net.Listener) context.Context {

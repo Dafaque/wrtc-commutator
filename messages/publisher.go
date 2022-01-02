@@ -2,6 +2,7 @@ package messages
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,15 +15,18 @@ func init() {
 }
 
 type Publisher struct {
+	mu        sync.RWMutex
 	consumers map[uuid.UUID]*Consumer
 }
 
 func (p *Publisher) Consume(consumer *Consumer) {
 	p.consumers[consumer.id] = consumer
+	println("consumed", consumer.id.String(), len(__consumers))
 }
 
 func (p *Publisher) Unconsume(consumer *Consumer) {
 	delete(p.consumers, consumer.id)
+	println("unconsumed", consumer.id.String(), len(__consumers))
 }
 
 func (p *Publisher) Broadcast(msg *Message) {
@@ -30,6 +34,8 @@ func (p *Publisher) Broadcast(msg *Message) {
 		return
 	}
 	now := time.Now()
+	println("broadcasting msg", string(msg.To), string(msg.With))
+	p.mu.Lock()
 	for _, consumer := range p.consumers {
 		// TODO: configurable connstant
 		if now.After(consumer.lastReaded.Add(60 * time.Second)) {
@@ -40,6 +46,7 @@ func (p *Publisher) Broadcast(msg *Message) {
 		// FIXME: Mb need here some sign of open chan; potential deadlock
 		consumer.msgChan <- msg
 	}
+	p.mu.Unlock()
 }
 
 func NewPublsher() *Publisher {

@@ -8,7 +8,6 @@ import (
 
 func Entrypoint(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	// TODO: figure out ws protocol method
 	case http.MethodGet:
 		break
 	default:
@@ -24,7 +23,7 @@ func Entrypoint(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, payload, errReadMessage := conn.ReadMessage()
 		if errReadMessage != nil {
-			conn.Close()
+			conn.Close(errReadMessage)
 			return
 		}
 		commands.Exec(conn, payload)

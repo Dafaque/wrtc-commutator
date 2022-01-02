@@ -17,7 +17,13 @@ func (c *Connection) ReadMessage() (int, []byte, error) {
 	return c.conn.ReadMessage()
 }
 
-func (c *Connection) Close() error {
+func (c *Connection) Close(reason error) error {
+	if reason != nil {
+		c.WriteMessage([]byte(reason.Error()))
+	}
+	for _, fn := range c.closeHandlers {
+		fn()
+	}
 	return c.conn.Close()
 }
 

@@ -28,8 +28,9 @@ func (c *Consumer) Confirm() {
 
 func NewConsumer() *Consumer {
 	return &Consumer{
-		id:      uuid.New(),
-		msgChan: make(chan *Message),
-		err:     make(chan error),
+		id:         uuid.New(),
+		lastReaded: time.Now(),
+		msgChan:    make(chan *Message),
+		err:        make(chan error),
 	}
 }

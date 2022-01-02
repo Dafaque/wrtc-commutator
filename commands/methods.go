@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"commutator/connection"
 	"commutator/messages"
+	"encoding/hex"
+	"errors"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -17,9 +19,20 @@ func SendOffer(ws *connection.Connection, args []byte) error {
 	if e != nil {
 		return e
 	}
+	if bytes.EqualFold(p, VAL_STAR) {
+		return errors.New("invalid target")
+	}
+
 	println("SendOffer", "to:", string(to), "with:", string(p))
 
-	messages.NewPublsher().Broadcast(messages.NewMessage(to, []byte(ws.ID), p, []byte{}))
+	messages.NewPublsher().Broadcast(
+		messages.NewMessage(
+			to,
+			ws.ID,
+			p,
+			[]byte{},
+		),
+	)
 
 	return nil
 }
@@ -33,40 +46,71 @@ func SendAnswer(ws *connection.Connection, args []byte) error {
 	if e != nil {
 		return e
 	}
+	if bytes.EqualFold(p, VAL_STAR) {
+		return errors.New("invalid target")
+	}
 	println("SendAnswer", "to:", string(to), "with:", string(p))
+
+	messages.NewPublsher().Broadcast(
+		messages.NewMessage(
+			to,
+			ws.ID,
+			p,
+			[]byte{},
+		),
+	)
 	return nil
 }
 
 func Online(ws *connection.Connection, args []byte) error {
 	//TODO validate args
-	id, e := parseArg(ARG_WITH, &args)
-	if e != nil {
-		return e
+	if len(ws.ID) > 0 {
+		return errors.New("already online")
 	}
-	ws.ID = id
-	println("Online", "with:", string(id))
+	{
+		id, e := parseArg(ARG_WITH, &args)
+		if e != nil {
+			return e
+		}
+		ws.ID = id
+	}
 
-	pub := messages.NewPublsher()
-	con := messages.NewConsumer()
-	pub.Consume(con)
-	defer pub.Unconsume(con)
-	for {
-		println("cycle")
-		msg, err := con.Read()
-		if err != nil {
-			ws.Close()
-			break
-		}
-		if bytes.EqualFold(msg.To, ws.ID) || bytes.EqualFold(msg.To, VAL_STAR) {
-			b, err := msgpack.Marshal(msg)
+	println("Online as", string(ws.ID))
+
+	go func() {
+		pub := messages.NewPublsher()
+		con := messages.NewConsumer()
+		pub.Consume(con)
+		defer pub.Unconsume(con)
+		ws.AddCloseHandler(func() {
+			pub.Unconsume(con)
+		})
+		for {
+			msg, err := con.Read()
 			if err != nil {
-				ws.WriteMessage([]byte(err.Error()))
+				ws.Close(err)
+				println("err read:", err.Error())
+				break
 			}
-			if errWriteMessage := ws.WriteMessage(b); errWriteMessage != nil {
-				ws.Close()
-				println("err", errWriteMessage)
+			if bytes.EqualFold(msg.To, ws.ID) || bytes.EqualFold(msg.To, VAL_STAR) {
+				b, errMarshal := msgpack.Marshal(msg)
+				if err != nil {
+					ws.Close(errMarshal)
+					break
+				}
+
+				// TODO: TMP
+				b = []byte(hex.EncodeToString(b))
+
+				if errWriteMessage := ws.WriteMessage(b); errWriteMessage != nil {
+					ws.Close(errWriteMessage)
+					println("err", errWriteMessage)
+					break
+				}
+				con.Confirm()
 			}
 		}
-	}
+	}()
+
 	return nil
 }
