@@ -49,5 +49,9 @@ func NewConnection(w http.ResponseWriter, r *http.Request) (conn *Connection, er
 	ws.SetPongHandler(nil)
 	conn = &Connection{}
 	conn.conn = ws
+
+	conn.AddCloseHandler(func() {
+		servertools.ConnectionClosed()
+	})
 	return
 }

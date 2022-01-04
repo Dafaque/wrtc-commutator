@@ -2,20 +2,46 @@ package commands
 
 import (
 	"commutator/connection"
+	"os"
+	"strconv"
 )
 
 const (
 	METHOD_ONLINE rune = 43
 	METHOD_OFFER  rune = 62
 	METHOD_ANSWER rune = 60
+
+	MODE_OFFER  byte = 0
+	MODE_ANSWER byte = 1
 )
 
 var (
 	ARG_TO   []byte = []byte{116, 111}
 	ARG_WITH []byte = []byte{119, 105, 116, 104}
-
-	VAL_STAR []byte = []byte{42}
+	ARG_SIGN []byte = []byte{115, 105, 103, 110}
 )
+
+var (
+	NETWORK            string = "tcp6"
+	CONNECTION_TIMEOUT int    = 5
+)
+
+func init() {
+	if v, exist := os.LookupEnv("APP.NETWORK"); exist {
+		NETWORK = v
+	}
+	if v, exist := os.LookupEnv("APP.CONNECTION_TIMEOUT"); exist {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			println("err init vars: ", err.Error())
+			return
+		}
+		CONNECTION_TIMEOUT = i
+	}
+	println("NETWORK:", NETWORK)
+	println("CONNECTION_TIMEOUT:", CONNECTION_TIMEOUT)
+
+}
 
 type WSHandler func(*connection.Connection, []byte) error
 

@@ -3,10 +3,15 @@ package handlers
 import (
 	"commutator/commands"
 	"commutator/connection"
+	servertools "commutator/server_tools"
 	"net/http"
 )
 
 func Entrypoint(w http.ResponseWriter, r *http.Request) {
+	if v, _ := r.Context().Value(servertools.ConnectionsOverflowKey).(bool); v {
+		w.WriteHeader(http.StatusTooManyRequests)
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		break
@@ -28,4 +33,5 @@ func Entrypoint(w http.ResponseWriter, r *http.Request) {
 		}
 		commands.Exec(conn, payload)
 	}
+	// TODO: make shure cycle is breaks
 }

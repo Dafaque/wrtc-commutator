@@ -1,13 +1,20 @@
 package commands
 
 import (
-	"bytes"
 	"commutator/connection"
-	"commutator/messages"
+	"commutator/model"
 	"errors"
+	"fmt"
+	"io"
+	"net"
+	"strconv"
+	"time"
 )
 
 func SendOffer(ws *connection.Connection, args []byte) error {
+	if len(ws.ID) == 0 {
+		return errors.New("not online")
+	}
 	to, e := parseArg(ARG_TO, &args)
 	if e != nil {
 		return e
@@ -16,25 +23,29 @@ func SendOffer(ws *connection.Connection, args []byte) error {
 	if e != nil {
 		return e
 	}
-	if bytes.EqualFold(to, VAL_STAR) {
-		return errors.New("invalid target")
+	s, e := parseArg(ARG_SIGN, &args)
+	if e != nil {
+		return e
 	}
 
-	println("SendOffer", "to:", string(to), "with:", string(p))
-
-	messages.NewPublsher().Broadcast(
-		messages.NewMessage(
-			to,
-			ws.ID,
-			p,
-			[]byte{},
-		),
+	println(
+		"SendOffer",
+		"to:", string(to),
+		"with:", string(p),
+		"signature:", string(s),
 	)
 
-	return nil
+	msg := model.NewSDP(ws.ID, p, MODE_OFFER, []byte{})
+	if !msg.Verify(to) {
+		return errors.New("bad signature")
+	}
+	return Dial(string(to), msg)
 }
 
 func SendAnswer(ws *connection.Connection, args []byte) error {
+	if len(ws.ID) == 0 {
+		return errors.New("not online")
+	}
 	to, e := parseArg(ARG_TO, &args)
 	if e != nil {
 		return e
@@ -43,20 +54,24 @@ func SendAnswer(ws *connection.Connection, args []byte) error {
 	if e != nil {
 		return e
 	}
-	if bytes.EqualFold(to, VAL_STAR) {
-		return errors.New("invalid target")
-	}
-	println("SendAnswer", "to:", string(to), "with:", string(p))
 
-	messages.NewPublsher().Broadcast(
-		messages.NewMessage(
-			to,
-			ws.ID,
-			p,
-			[]byte{},
-		),
+	s, e := parseArg(ARG_SIGN, &args)
+	if e != nil {
+		return e
+	}
+
+	println(
+		"SendAnswer",
+		"to:", string(to),
+		"with:", string(p),
+		"signature:", string(s),
 	)
-	return nil
+
+	msg := model.NewSDP(ws.ID, p, MODE_ANSWER, s)
+	if !msg.Verify(to) {
+		return errors.New("bad signature")
+	}
+	return Dial(string(to), msg)
 }
 
 func Online(ws *connection.Connection, args []byte) error {
@@ -75,36 +90,74 @@ func Online(ws *connection.Connection, args []byte) error {
 	println("Online as", string(ws.ID))
 
 	go func() {
-		pub := messages.NewPublsher()
-		con := messages.NewConsumer()
-		pub.Consume(con)
-		defer pub.Unconsume(con)
+		l, err := net.Listen(NETWORK, ":0")
+		if err != nil {
+			panic(err)
+		}
+
 		ws.AddCloseHandler(func() {
-			pub.Unconsume(con)
+			if e := l.Close(); e != nil {
+				println("listener already closed", ws.ID)
+			}
+			println("listener closed", ws.ID)
 		})
+		defer l.Close()
+
+		port := l.Addr().(*net.TCPAddr).Port
+		b := PortToHex(port)
+		errSendID := ws.WriteMessage(b)
+		if errSendID != nil {
+			println("err send online ID:", errSendID)
+			return
+		}
+
 		for {
-			msg, err := con.Read()
+			conn, err := l.Accept()
 			if err != nil {
-				ws.Close(err)
-				println("err read:", err.Error())
+				fmt.Println("err accept conn", err)
 				break
 			}
-			if bytes.EqualFold(msg.To, ws.ID) || bytes.EqualFold(msg.To, VAL_STAR) {
-				b, errMarshal := Serialize(msg)
-				if err != nil {
-					ws.Close(errMarshal)
-					break
-				}
 
-				if errWriteMessage := ws.WriteMessage(b); errWriteMessage != nil {
-					ws.Close(errWriteMessage)
-					println("err", errWriteMessage)
-					break
-				}
-				con.Confirm()
+			conn.SetDeadline(time.Now().Add(time.Duration(CONNECTION_TIMEOUT) * time.Second))
+
+			data, errReadFromConn := io.ReadAll(conn)
+			if errReadFromConn != nil {
+				println("err read tcp message: ", errReadFromConn.Error())
+			}
+			conn.Close()
+			println(string(data))
+			errWrite := ws.WriteMessage(data)
+			if errWrite != nil {
+				ws.Close(errWrite)
+				break
 			}
 		}
 	}()
-
 	return nil
+}
+
+func PortToHex(p int) []byte {
+	return []byte(fmt.Sprintf("%x", p))
+}
+
+func HexToPort(s string) (int64, error) {
+	return strconv.ParseInt(s, 16, 64)
+}
+
+func Dial(hexPort string, sdp *model.SDP) error {
+	port, err := HexToPort(hexPort)
+	if err != nil {
+		return err
+	}
+
+	conn, errDial := net.Dial(NETWORK, fmt.Sprintf(":%d", port))
+	if errDial != nil {
+		return errDial
+	}
+	b, errSerialize := Serialize(sdp)
+	if errSerialize != nil {
+		return errSerialize
+	}
+	conn.Write(b)
+	return conn.Close()
 }

@@ -15,24 +15,22 @@ func main() {
 	mux.HandleFunc("/", handlers.Entrypoint)
 
 	var server *http.Server = &http.Server{
-		// TODO: domain name, i guess
-		Addr:      "0.0.0.0:8080",
-		Handler:   mux,
-		TLSConfig: &tls.Config{},
-		// TODO: zeros to numbers
-		ReadTimeout:       0,
-		ReadHeaderTimeout: 0,
-		WriteTimeout:      0,
-		IdleTimeout:       1 * time.Minute,
+		Addr:              "0.0.0.0:8080",
+		Handler:           mux,
+		TLSConfig:         &tls.Config{},
+		ReadTimeout:       60 * time.Second,
+		ReadHeaderTimeout: 60 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       60 * time.Second,
 		// TODO: calculate this number
 		MaxHeaderBytes: 20000,
 		// TODO: wtf?
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 		ConnState:    servertools.OnConnectionStateChanged,
-		// TODO: own logger
+		// TODO: logger
 		ErrorLog:    &log.Logger{},
-		BaseContext: servertools.MakeContextForListener,
-		ConnContext: servertools.MakeContextForConnection,
+		BaseContext: servertools.MakeListenerContext,
+		ConnContext: servertools.MakeConnectionContext,
 	}
 	panic(server.ListenAndServe())
 }
