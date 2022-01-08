@@ -19,7 +19,9 @@ func (m *SDP) Verify(target []byte) bool {
 	h.Write(m.From)
 	h.Write(m.With)
 	h.Write(target)
-	return bytes.EqualFold(m.signature, h.Sum(nil))
+	var sum []byte = h.Sum(nil)
+	println("signature: g:", string(m.signature), "; c:", string(sum))
+	return bytes.EqualFold(m.signature, sum)
 }
 
 func NewSDP(from []byte, payload []byte, as byte, signature []byte) *SDP {
