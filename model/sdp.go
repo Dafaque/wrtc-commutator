@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 )
 
 type SDP struct {
@@ -20,7 +21,11 @@ func (m *SDP) Verify(target []byte) bool {
 	h.Write(m.With)
 	h.Write(target)
 	var sum []byte = h.Sum(nil)
-	println("signature: g:", string(m.signature), "; c:", string(sum))
+	println(
+		"signature: g:", hex.EncodeToString(m.signature),
+		"; c:", hex.EncodeToString(sum),
+		"; K:", hex.EncodeToString(SECRET),
+	)
 	return bytes.EqualFold(m.signature, sum)
 }
 

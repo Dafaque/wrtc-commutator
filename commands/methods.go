@@ -35,7 +35,7 @@ func SendOffer(ws *connection.Connection, args []byte) error {
 		"signature:", string(s),
 	)
 
-	msg := model.NewSDP(ws.ID, p, MODE_OFFER, []byte{})
+	msg := model.NewSDP(ws.ID, p, MODE_OFFER, s)
 	if !msg.Verify(to) {
 		return errors.New("bad signature")
 	}
