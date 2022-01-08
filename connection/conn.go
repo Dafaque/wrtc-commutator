@@ -42,8 +42,11 @@ func NewConnection(w http.ResponseWriter, r *http.Request) (conn *Connection, er
 	ws, err := servertools.Upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		println("cannot upgrade:", err.Error())
+		if w != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+		}
 		return
 	}
 	// TODO
