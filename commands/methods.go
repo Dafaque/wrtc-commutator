@@ -102,13 +102,15 @@ func Online(ws *connection.Connection, args []byte) error {
 			println("listener closed", ws.ID)
 		})
 		defer l.Close()
-
-		port := l.Addr().(*net.TCPAddr).Port
-		b := PortToHex(port)
-		errSendID := ws.WriteMessage(b)
-		if errSendID != nil {
-			println("err send online ID:", errSendID)
-			return
+		{
+			port := l.Addr().(*net.TCPAddr).Port
+			var b []byte = []byte{RESULT_ONLINE}
+			b = append(b, PortToHex(port)...)
+			errSendID := ws.WriteMessage(b)
+			if errSendID != nil {
+				println("err send online ID:", errSendID)
+				return
+			}
 		}
 
 		for {
@@ -125,7 +127,6 @@ func Online(ws *connection.Connection, args []byte) error {
 				println("err read tcp message: ", errReadFromConn.Error())
 			}
 			conn.Close()
-			println(string(data))
 			errWrite := ws.WriteMessage(data)
 			if errWrite != nil {
 				ws.Close(errWrite)

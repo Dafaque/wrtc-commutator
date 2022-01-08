@@ -11,6 +11,9 @@ const (
 	METHOD_OFFER  rune = 62
 	METHOD_ANSWER rune = 60
 
+	RESULT_ERROR  byte = 33
+	RESULT_ONLINE byte = 64
+
 	MODE_OFFER  byte = 0
 	MODE_ANSWER byte = 1
 )

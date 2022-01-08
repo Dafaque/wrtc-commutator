@@ -7,6 +7,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const RESULT_ERROR byte = 33
+
 type Connection struct {
 	conn          *websocket.Conn
 	ID            []byte
@@ -19,7 +21,8 @@ func (c *Connection) ReadMessage() (int, []byte, error) {
 
 func (c *Connection) Close(reason error) error {
 	if reason != nil {
-		c.WriteMessage([]byte(reason.Error()))
+		var msg []byte = []byte{RESULT_ERROR}
+		c.WriteMessage(append(msg, []byte(reason.Error())...))
 	}
 	for _, fn := range c.closeHandlers {
 		fn()

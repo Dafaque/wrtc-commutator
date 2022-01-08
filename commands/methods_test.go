@@ -51,7 +51,3 @@ func BenchmarkExec(b *testing.B) {
 	Exec(&connection.Connection{}, []byte(">to[asdfasdf] with[disis an offer]"))
 	Exec(&connection.Connection{}, []byte("<to[asdfasf] with[disisan ansua]"))
 }
-
-func Test(t *testing.T) {
-	fmt.Println([]byte("sign"))
-}
