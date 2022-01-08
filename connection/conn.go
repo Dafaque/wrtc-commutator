@@ -28,7 +28,7 @@ func (c *Connection) Close(reason error) error {
 }
 
 func (c *Connection) WriteMessage(payload []byte) error {
-	return c.conn.WriteMessage(websocket.TextMessage, payload)
+	return c.conn.WriteMessage(websocket.BinaryMessage, payload)
 }
 
 func (c *Connection) AddCloseHandler(fn func()) {
