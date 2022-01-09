@@ -12,6 +12,7 @@ const RESULT_ERROR byte = 33
 type Connection struct {
 	conn          *websocket.Conn
 	ID            []byte
+	Tag           []byte
 	closeHandlers []func()
 }
 
@@ -43,10 +44,6 @@ func NewConnection(w http.ResponseWriter, r *http.Request) (conn *Connection, er
 
 	if err != nil {
 		println("cannot upgrade:", err.Error())
-		if w != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-		}
 		return
 	}
 	// TODO

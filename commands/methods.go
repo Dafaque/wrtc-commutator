@@ -34,7 +34,6 @@ func SendOffer(ws *connection.Connection, args []byte) error {
 		"with:", string(p),
 		"signature:", string(s),
 	)
-
 	msg := model.NewSDP(ws.ID, p, MODE_OFFER, s)
 	if !msg.Verify(to) {
 		return errors.New("bad signature")
@@ -80,14 +79,14 @@ func Online(ws *connection.Connection, args []byte) error {
 		return errors.New("already online")
 	}
 	{
-		id, e := parseArg(ARG_WITH, &args)
+		tag, e := parseArg(ARG_WITH, &args)
 		if e != nil {
 			return e
 		}
-		ws.ID = id
+		ws.Tag = tag
 	}
 
-	println("Online as", string(ws.ID))
+	println("Online as", string(ws.Tag))
 
 	go func() {
 		l, err := net.Listen(NETWORK, ":0")
@@ -97,18 +96,20 @@ func Online(ws *connection.Connection, args []byte) error {
 
 		ws.AddCloseHandler(func() {
 			if e := l.Close(); e != nil {
-				println("listener already closed", ws.ID)
+				println("listener already closed", string(ws.Tag))
 			}
-			println("listener closed", ws.ID)
+			println("listener closed", string(ws.Tag))
 		})
 		defer l.Close()
 		{
 			port := l.Addr().(*net.TCPAddr).Port
 			var b []byte = []byte{RESULT_ONLINE}
-			b = append(b, PortToHex(port)...)
+			ws.ID = PortToHex(port)
+			b = append(b, ws.ID...)
 			errSendID := ws.WriteMessage(b)
 			if errSendID != nil {
 				println("err send online ID:", errSendID)
+				ws.Close(errSendID)
 				return
 			}
 		}
@@ -120,7 +121,11 @@ func Online(ws *connection.Connection, args []byte) error {
 				break
 			}
 
-			conn.SetDeadline(time.Now().Add(time.Duration(CONNECTION_TIMEOUT) * time.Second))
+			conn.SetDeadline(
+				time.Now().Add(
+					time.Duration(CONNECTION_TIMEOUT) * time.Second,
+				),
+			)
 
 			data, errReadFromConn := io.ReadAll(conn)
 			if errReadFromConn != nil {
