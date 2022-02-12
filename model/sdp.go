@@ -1,4 +1,5 @@
 //go:build !web
+
 package model
 
 import (
@@ -22,9 +23,8 @@ func (m *SDP) Verify(target []byte) bool {
 	h.Write(target)
 	var sum []byte = h.Sum(nil)
 	println(
-		"signature: g:", hex.EncodeToString(m.signature),
-		"; c:", hex.EncodeToString(sum),
-		"; K:", hex.EncodeToString(SECRET),
+		"signature:\ng:", hex.EncodeToString(m.signature),
+		"\nc:", hex.EncodeToString(sum),
 	)
 	return bytes.EqualFold(m.signature, sum)
 }

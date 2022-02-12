@@ -4,6 +4,7 @@ import (
 	"commutator/connection"
 	"commutator/errcodes"
 	"commutator/model"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
@@ -63,7 +64,7 @@ func SendAnswer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 		"SendAnswer",
 		"to:", string(to),
 		"with:", string(p),
-		"signature:", string(s),
+		"signature:", hex.EncodeToString(s),
 	)
 
 	msg := model.NewSDP(ws.ID, p, MODE_ANSWER, s)
@@ -157,6 +158,7 @@ func Dial(hexPort string, sdp *model.SDP) errcodes.ErrorCode {
 		return errcodes.ERROR_CODE_UNKNOWN
 	}
 
+	println("trying to dial", hexPort)
 	conn, errDial := net.Dial(NETWORK, fmt.Sprintf(":%d", port))
 	if errDial != nil {
 		return errcodes.ERROR_CODE_TARGET_UNACCESSABLE
@@ -174,5 +176,6 @@ func Dial(hexPort string, sdp *model.SDP) errcodes.ErrorCode {
 		// TODO
 		return errcodes.ERROR_CODE_UNKNOWN
 	}
+	println("dialed", hexPort)
 	return errcodes.ERROR_CODE_NONE
 }
