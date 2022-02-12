@@ -22,11 +22,14 @@ func (m *SDP) Verify(target []byte) bool {
 	h.Write(m.With)
 	h.Write(target)
 	var sum []byte = h.Sum(nil)
+	var signature []byte
+	hex.Decode(signature, m.signature)
+
 	println(
-		"signature:\ng:", hex.EncodeToString(m.signature),
+		"signature:\ng:", hex.EncodeToString(signature),
 		"\nc:", hex.EncodeToString(sum),
 	)
-	return bytes.EqualFold(m.signature, sum)
+	return bytes.EqualFold(signature, sum)
 }
 
 func NewSDP(from []byte, payload []byte, as byte, signature []byte) *SDP {
