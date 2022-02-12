@@ -22,7 +22,7 @@ func (m *SDP) Verify(target []byte) bool {
 	h.Write(m.With)
 	h.Write(target)
 	var sum []byte = h.Sum(nil)
-	var signature []byte
+	var signature []byte = make([]byte, hex.DecodedLen(len(m.signature)))
 	hex.Decode(signature, m.signature)
 
 	println(
