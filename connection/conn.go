@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"commutator/errcodes"
 	servertools "commutator/server_tools"
 	"net/http"
 
@@ -20,10 +21,13 @@ func (c *Connection) ReadMessage() (int, []byte, error) {
 	return c.conn.ReadMessage()
 }
 
-func (c *Connection) Close(reason error) error {
-	if reason != nil {
+func (c *Connection) Error(reason errcodes.ErrorCode) error {
+	if reason != errcodes.ERROR_CODE_NONE {
 		var msg []byte = []byte{RESULT_ERROR}
-		c.WriteMessage(append(msg, []byte(reason.Error())...))
+		c.WriteMessage(append(msg, byte(reason)))
+	}
+	if reason < 100 {
+		return nil
 	}
 	for _, fn := range c.closeHandlers {
 		fn()

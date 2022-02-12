@@ -2,6 +2,7 @@ package commands
 
 import (
 	"commutator/connection"
+	"commutator/errcodes"
 	"os"
 	"strconv"
 )
@@ -11,8 +12,9 @@ const (
 	METHOD_OFFER  rune = 62
 	METHOD_ANSWER rune = 60
 
-	RESULT_ERROR  byte = 33
-	RESULT_ONLINE byte = 64
+	RESULT_ERROR       byte = 33
+	RESULT_ONLINE      byte = 64
+	RESULT_SDP_MESSAGE byte = 42
 
 	MODE_OFFER  byte = 0
 	MODE_ANSWER byte = 1
@@ -46,7 +48,7 @@ func init() {
 
 }
 
-type WSHandler func(*connection.Connection, []byte) error
+type WSHandler func(*connection.Connection, []byte) errcodes.ErrorCode
 
 var exec map[rune]WSHandler = map[rune]WSHandler{
 	METHOD_ONLINE: Online,

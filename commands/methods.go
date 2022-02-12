@@ -2,8 +2,8 @@ package commands
 
 import (
 	"commutator/connection"
+	"commutator/errcodes"
 	"commutator/model"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -11,20 +11,20 @@ import (
 	"time"
 )
 
-func SendOffer(ws *connection.Connection, args []byte) error {
+func SendOffer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 	if len(ws.ID) == 0 {
-		return errors.New("not online")
+		return errcodes.ERROR_CODE_NOT_ONLINE
 	}
 	to, e := parseArg(ARG_TO, &args)
-	if e != nil {
+	if e != errcodes.ERROR_CODE_NONE {
 		return e
 	}
 	p, e := parseArg(ARG_WITH, &args)
-	if e != nil {
+	if e != errcodes.ERROR_CODE_NONE {
 		return e
 	}
 	s, e := parseArg(ARG_SIGN, &args)
-	if e != nil {
+	if e != errcodes.ERROR_CODE_NONE {
 		return e
 	}
 
@@ -36,26 +36,26 @@ func SendOffer(ws *connection.Connection, args []byte) error {
 	)
 	msg := model.NewSDP(ws.ID, p, MODE_OFFER, s)
 	if !msg.Verify(to) {
-		return errors.New("bad signature")
+		return errcodes.ERROR_CODE_BAD_SIGNATURE
 	}
 	return Dial(string(to), msg)
 }
 
-func SendAnswer(ws *connection.Connection, args []byte) error {
+func SendAnswer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 	if len(ws.ID) == 0 {
-		return errors.New("not online")
+		return errcodes.ERROR_CODE_NOT_ONLINE
 	}
 	to, e := parseArg(ARG_TO, &args)
-	if e != nil {
+	if e != errcodes.ERROR_CODE_NONE {
 		return e
 	}
 	p, e := parseArg(ARG_WITH, &args)
-	if e != nil {
+	if e != errcodes.ERROR_CODE_NONE {
 		return e
 	}
 
 	s, e := parseArg(ARG_SIGN, &args)
-	if e != nil {
+	if e != errcodes.ERROR_CODE_NONE {
 		return e
 	}
 
@@ -68,19 +68,19 @@ func SendAnswer(ws *connection.Connection, args []byte) error {
 
 	msg := model.NewSDP(ws.ID, p, MODE_ANSWER, s)
 	if !msg.Verify(to) {
-		return errors.New("bad signature")
+		return errcodes.ERROR_CODE_BAD_SIGNATURE
 	}
 	return Dial(string(to), msg)
 }
 
-func Online(ws *connection.Connection, args []byte) error {
+func Online(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 	//TODO validate args
 	if len(ws.ID) > 0 {
-		return errors.New("already online")
+		return errcodes.ERROR_CODE_ALREADY_ONLINE
 	}
 	{
 		tag, e := parseArg(ARG_WITH, &args)
-		if e != nil {
+		if e != errcodes.ERROR_CODE_NONE {
 			return e
 		}
 		ws.Tag = tag
@@ -109,7 +109,7 @@ func Online(ws *connection.Connection, args []byte) error {
 			errSendID := ws.WriteMessage(b)
 			if errSendID != nil {
 				println("err send online ID:", errSendID)
-				ws.Close(errSendID)
+				ws.Error(errcodes.ERROR_CODE_CANT_WRITE_BACK)
 				return
 			}
 		}
@@ -134,12 +134,12 @@ func Online(ws *connection.Connection, args []byte) error {
 			conn.Close()
 			errWrite := ws.WriteMessage(data)
 			if errWrite != nil {
-				ws.Close(errWrite)
+				ws.Error(errcodes.ERROR_CODE_CANT_WRITE_BACK)
 				break
 			}
 		}
 	}()
-	return nil
+	return errcodes.ERROR_CODE_NONE
 }
 
 func PortToHex(p int) []byte {
@@ -150,20 +150,29 @@ func HexToPort(s string) (int64, error) {
 	return strconv.ParseInt(s, 16, 64)
 }
 
-func Dial(hexPort string, sdp *model.SDP) error {
+func Dial(hexPort string, sdp *model.SDP) errcodes.ErrorCode {
 	port, err := HexToPort(hexPort)
 	if err != nil {
-		return err
+		// TODO
+		return errcodes.ERROR_CODE_UNKNOWN
 	}
 
 	conn, errDial := net.Dial(NETWORK, fmt.Sprintf(":%d", port))
 	if errDial != nil {
-		return errDial
+		return errcodes.ERROR_CODE_TARGET_UNACCESSABLE
 	}
 	b, errSerialize := Serialize(sdp)
 	if errSerialize != nil {
-		return errSerialize
+		return errcodes.ERROR_CODE_UNKNOWN
 	}
-	conn.Write(b)
-	return conn.Close()
+	var sdpData []byte = []byte{RESULT_SDP_MESSAGE}
+	_, errWrite := conn.Write(append(sdpData, b...))
+	if errWrite != nil {
+		return errcodes.ERROR_CODE_TARGET_UNACCESSABLE
+	}
+	if errClose := conn.Close(); errClose != nil {
+		// TODO
+		return errcodes.ERROR_CODE_UNKNOWN
+	}
+	return errcodes.ERROR_CODE_NONE
 }

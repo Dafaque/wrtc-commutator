@@ -3,27 +3,28 @@ package commands
 import (
 	"bytes"
 	"commutator/connection"
+	"commutator/errcodes"
 	"fmt"
 	"testing"
 )
 
 func TestSendOffer(t *testing.T) {
-	var err error = SendOffer(&connection.Connection{}, []byte("to[asdfasdf] with[disis an offer]"))
-	if err != nil {
+	var err errcodes.ErrorCode = SendOffer(&connection.Connection{}, []byte("to[asdfasdf] with[disis an offer]"))
+	if err != errcodes.ERROR_CODE_NONE {
 		t.Fatal(err)
 	}
 }
 
 func TestSendAnswer(t *testing.T) {
-	var err error = SendAnswer(&connection.Connection{}, []byte("to[asdfasdf] with[disis an answer]"))
-	if err != nil {
+	var err errcodes.ErrorCode = SendAnswer(&connection.Connection{}, []byte("to[asdfasdf] with[disis an answer]"))
+	if err != errcodes.ERROR_CODE_NONE {
 		t.Fatal(err)
 	}
 }
 
 func TestSendOnline(t *testing.T) {
-	var err error = Online(&connection.Connection{}, []byte("with[salouronili] $$$salamo aleyyqoomo"))
-	if err != nil {
+	var err errcodes.ErrorCode = Online(&connection.Connection{}, []byte("with[salouronili] $$$salamo aleyyqoomo"))
+	if err != errcodes.ERROR_CODE_NONE {
 		t.Fatal(err)
 	}
 }
@@ -33,7 +34,7 @@ func TestParseArg(t *testing.T) {
 	var src []byte = []byte(fmt.Sprintf("to[%s]", expected))
 	actual, err := parseArg(ARG_TO, &src)
 
-	if err != nil {
+	if err != errcodes.ERROR_CODE_NONE {
 		t.Fatal(err)
 	}
 

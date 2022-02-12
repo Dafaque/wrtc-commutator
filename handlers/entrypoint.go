@@ -3,6 +3,7 @@ package handlers
 import (
 	"commutator/commands"
 	"commutator/connection"
+	"commutator/errcodes"
 	servertools "commutator/server_tools"
 	"net/http"
 )
@@ -28,7 +29,7 @@ func Entrypoint(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, payload, errReadMessage := conn.ReadMessage()
 		if errReadMessage != nil {
-			conn.Close(errReadMessage)
+			conn.Error(errcodes.ERROR_CODE_MUMBLING)
 			return
 		}
 		commands.Exec(conn, payload)

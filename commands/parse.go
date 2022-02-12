@@ -2,7 +2,7 @@ package commands
 
 import (
 	"bytes"
-	"errors"
+	"commutator/errcodes"
 )
 
 const (
@@ -10,7 +10,7 @@ const (
 	SCOPE_END   byte = 93
 )
 
-func parseArg(kw []byte, src *[]byte) (value []byte, err error) {
+func parseArg(kw []byte, src *[]byte) (value []byte, err errcodes.ErrorCode) {
 
 	var token_found bool = false
 
@@ -46,7 +46,7 @@ func parseArg(kw []byte, src *[]byte) (value []byte, err error) {
 		}
 	}
 
-	err = errors.New("syntax error")
+	err = errcodes.ERROR_CODE_INVALID_SYNTAX
 	value = nil
 	return
 }
