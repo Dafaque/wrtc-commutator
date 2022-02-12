@@ -35,5 +35,4 @@ func ConnectionClosed() {
 	if connectionsNumber > 0 {
 		atomic.AddUint32(&connectionsNumber, ^uint32(0))
 	}
-	println("connection closed", connectionsNumber)
 }

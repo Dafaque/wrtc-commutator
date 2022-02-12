@@ -3,6 +3,7 @@ package main
 import (
 	_ "commutator/commands"
 	"commutator/handlers"
+	"commutator/logger"
 	servertools "commutator/server_tools"
 	"crypto/tls"
 	"log"
@@ -32,5 +33,6 @@ func main() {
 		BaseContext: servertools.MakeListenerContext,
 		ConnContext: servertools.MakeConnectionContext,
 	}
+	logger.Println("Server started")
 	panic(server.ListenAndServe())
 }

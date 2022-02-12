@@ -2,6 +2,7 @@ package connection
 
 import (
 	"commutator/errcodes"
+	"commutator/logger"
 	servertools "commutator/server_tools"
 	"net/http"
 
@@ -47,7 +48,7 @@ func NewConnection(w http.ResponseWriter, r *http.Request) (conn *Connection, er
 	ws, err := servertools.Upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
-		println("cannot upgrade:", err.Error())
+		logger.Println("cannot upgrade connection:", err.Error())
 		return
 	}
 	// TODO

@@ -24,11 +24,6 @@ func (m *SDP) Verify(target []byte) bool {
 	var sum []byte = h.Sum(nil)
 	var signature []byte = make([]byte, hex.DecodedLen(len(m.signature)))
 	hex.Decode(signature, m.signature)
-
-	println(
-		"signature:\ng:", hex.EncodeToString(signature),
-		"\nc:", hex.EncodeToString(sum),
-	)
 	return bytes.EqualFold(signature, sum)
 }
 

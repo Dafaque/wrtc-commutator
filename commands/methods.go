@@ -3,8 +3,8 @@ package commands
 import (
 	"commutator/connection"
 	"commutator/errcodes"
+	"commutator/logger"
 	"commutator/model"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
@@ -29,11 +29,10 @@ func SendOffer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 		return e
 	}
 
-	println(
+	logger.Println(
 		"SendOffer",
 		"to:", string(to),
 		"with:", string(p),
-		"signature:", string(s),
 	)
 	msg := model.NewSDP(ws.ID, p, MODE_OFFER, s)
 	if !msg.Verify(to) {
@@ -60,11 +59,10 @@ func SendAnswer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 		return e
 	}
 
-	println(
+	logger.Println(
 		"SendAnswer",
 		"to:", string(to),
 		"with:", string(p),
-		"signature:", hex.EncodeToString(s),
 	)
 
 	msg := model.NewSDP(ws.ID, p, MODE_ANSWER, s)
@@ -87,8 +85,6 @@ func Online(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 		ws.Tag = tag
 	}
 
-	println("Online as", string(ws.Tag))
-
 	go func() {
 		l, err := net.Listen(NETWORK, ":0")
 		if err != nil {
@@ -96,12 +92,15 @@ func Online(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 		}
 
 		ws.AddCloseHandler(func() {
-			if e := l.Close(); e != nil {
-				println("listener already closed", string(ws.Tag))
+			if l != nil {
+				l.Close()
 			}
-			println("listener closed", string(ws.Tag))
 		})
-		defer l.Close()
+		defer func() {
+			if l != nil {
+				l.Close()
+			}
+		}()
 		{
 			port := l.Addr().(*net.TCPAddr).Port
 			var b []byte = []byte{RESULT_ONLINE}
@@ -109,7 +108,7 @@ func Online(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 			b = append(b, ws.ID...)
 			errSendID := ws.WriteMessage(b)
 			if errSendID != nil {
-				println("err send online ID:", errSendID)
+				logger.Println("cannot send ID:", errSendID.Error())
 				ws.Error(errcodes.ERROR_CODE_CANT_WRITE_BACK)
 				return
 			}
@@ -118,23 +117,29 @@ func Online(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 		for {
 			conn, err := l.Accept()
 			if err != nil {
-				fmt.Println("err accept conn", err)
+				logger.Println("cannot accept connection:", err.Error())
 				break
 			}
-
-			conn.SetDeadline(
-				time.Now().Add(
-					time.Duration(CONNECTION_TIMEOUT) * time.Second,
-				),
-			)
+			{
+				errSetDeadline := conn.SetDeadline(
+					time.Now().Add(
+						time.Duration(CONNECTION_TIMEOUT) * time.Second,
+					),
+				)
+				if errSetDeadline != nil {
+					logger.Println("cannot set deadline:", errSetDeadline.Error())
+				}
+			}
 
 			data, errReadFromConn := io.ReadAll(conn)
 			if errReadFromConn != nil {
-				println("err read tcp message: ", errReadFromConn.Error())
+				logger.Println("err read tcp message:", errReadFromConn.Error())
+				continue
 			}
 			conn.Close()
 			errWrite := ws.WriteMessage(data)
 			if errWrite != nil {
+				logger.Println("cannot write message:", errWrite.Error())
 				ws.Error(errcodes.ERROR_CODE_CANT_WRITE_BACK)
 				break
 			}
@@ -154,28 +159,29 @@ func HexToPort(s string) (int64, error) {
 func Dial(hexPort string, sdp *model.SDP) errcodes.ErrorCode {
 	port, err := HexToPort(hexPort)
 	if err != nil {
-		// TODO
+		logger.Println("cannot cast hexPort to int:", err.Error())
 		return errcodes.ERROR_CODE_UNKNOWN
 	}
 
-	println("trying to dial", hexPort)
 	conn, errDial := net.Dial(NETWORK, fmt.Sprintf(":%d", port))
 	if errDial != nil {
+		logger.Println("err dial:", port, errDial.Error())
 		return errcodes.ERROR_CODE_TARGET_UNACCESSABLE
 	}
 	b, errSerialize := Serialize(sdp)
 	if errSerialize != nil {
+		logger.Println("err serialize:", port, errSerialize.Error())
 		return errcodes.ERROR_CODE_UNKNOWN
 	}
 	var sdpData []byte = []byte{RESULT_SDP_MESSAGE}
 	_, errWrite := conn.Write(append(sdpData, b...))
 	if errWrite != nil {
+		logger.Println("err write:", port, errWrite.Error())
 		return errcodes.ERROR_CODE_TARGET_UNACCESSABLE
 	}
 	if errClose := conn.Close(); errClose != nil {
-		// TODO
+		logger.Println("err write:", port, errClose.Error())
 		return errcodes.ERROR_CODE_UNKNOWN
 	}
-	println("dialed", hexPort)
 	return errcodes.ERROR_CODE_NONE
 }
