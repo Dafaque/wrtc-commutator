@@ -13,9 +13,10 @@ const (
 	METHOD_ANSWER     rune = 60
 	METHOD_CANDIDATES rune = 64
 
-	RESULT_ERROR       byte = 33
-	RESULT_ONLINE      byte = 64
-	RESULT_SDP_MESSAGE byte = 42
+	RESULT_ERROR              byte = 33
+	RESULT_ONLINE             byte = 64
+	RESULT_SDP_MESSAGE        byte = 42
+	RESULT_CANDIDATES_MESSAGE byte = 64
 
 	MODE_OFFER  byte = 0
 	MODE_ANSWER byte = 1

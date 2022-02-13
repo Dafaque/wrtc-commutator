@@ -38,7 +38,15 @@ func SendOffer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 	if !msg.Verify(to) {
 		return errcodes.ERROR_CODE_BAD_SIGNATURE
 	}
-	return Dial(string(to), msg)
+
+	// TODO: DRY
+	b, errSerialize := Serialize(msg)
+	if errSerialize != nil {
+		logger.Println("err serialize:", errSerialize.Error())
+		return errcodes.ERROR_CODE_UNKNOWN
+	}
+	var sdpData []byte = []byte{RESULT_SDP_MESSAGE}
+	return Dial(string(to), append(sdpData, b...))
 }
 
 func SendAnswer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
@@ -69,7 +77,16 @@ func SendAnswer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 	if !msg.Verify(to) {
 		return errcodes.ERROR_CODE_BAD_SIGNATURE
 	}
-	return Dial(string(to), msg)
+
+	// TODO: DRY
+	b, errSerialize := Serialize(msg)
+	if errSerialize != nil {
+		logger.Println("err serialize:", errSerialize.Error())
+		return errcodes.ERROR_CODE_UNKNOWN
+	}
+	var sdpData []byte = []byte{RESULT_SDP_MESSAGE}
+
+	return Dial(string(to), append(sdpData, b...))
 }
 
 func SendCandidates(ws *connection.Connection, args []byte) errcodes.ErrorCode {
@@ -100,7 +117,15 @@ func SendCandidates(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 	if !msg.Verify(to) {
 		return errcodes.ERROR_CODE_BAD_SIGNATURE
 	}
-	return Dial(string(to), msg)
+
+	b, errSerialize := Serialize(msg)
+	if errSerialize != nil {
+		logger.Println("err serialize:", errSerialize.Error())
+		return errcodes.ERROR_CODE_UNKNOWN
+	}
+	var sdpData []byte = []byte{RESULT_CANDIDATES_MESSAGE}
+
+	return Dial(string(to), append(sdpData, b...))
 }
 
 func Online(ws *connection.Connection, args []byte) errcodes.ErrorCode {
@@ -187,7 +212,7 @@ func HexToPort(s string) (int64, error) {
 	return strconv.ParseInt(s, 16, 64)
 }
 
-func Dial(hexPort string, data interface{}) errcodes.ErrorCode {
+func Dial(hexPort string, data []byte) errcodes.ErrorCode {
 	port, err := HexToPort(hexPort)
 	if err != nil {
 		logger.Println("cannot cast hexPort to int:", err.Error())
@@ -199,13 +224,8 @@ func Dial(hexPort string, data interface{}) errcodes.ErrorCode {
 		logger.Println("err dial:", port, errDial.Error())
 		return errcodes.ERROR_CODE_TARGET_UNACCESSABLE
 	}
-	b, errSerialize := Serialize(data)
-	if errSerialize != nil {
-		logger.Println("err serialize:", port, errSerialize.Error())
-		return errcodes.ERROR_CODE_UNKNOWN
-	}
-	var sdpData []byte = []byte{RESULT_SDP_MESSAGE}
-	_, errWrite := conn.Write(append(sdpData, b...))
+
+	_, errWrite := conn.Write(data)
 	if errWrite != nil {
 		logger.Println("err write:", port, errWrite.Error())
 		return errcodes.ERROR_CODE_TARGET_UNACCESSABLE
