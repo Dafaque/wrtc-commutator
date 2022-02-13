@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	METHOD_ONLINE rune = 43
-	METHOD_OFFER  rune = 62
-	METHOD_ANSWER rune = 60
+	METHOD_ONLINE     rune = 43
+	METHOD_OFFER      rune = 62
+	METHOD_ANSWER     rune = 60
+	METHOD_CANDIDATES rune = 64
 
 	RESULT_ERROR       byte = 33
 	RESULT_ONLINE      byte = 64
@@ -51,7 +52,8 @@ func init() {
 type WSHandler func(*connection.Connection, []byte) errcodes.ErrorCode
 
 var exec map[rune]WSHandler = map[rune]WSHandler{
-	METHOD_ONLINE: Online,
-	METHOD_OFFER:  SendOffer,
-	METHOD_ANSWER: SendAnswer,
+	METHOD_ONLINE:     Online,
+	METHOD_OFFER:      SendOffer,
+	METHOD_ANSWER:     SendAnswer,
+	METHOD_CANDIDATES: SendCandidates,
 }

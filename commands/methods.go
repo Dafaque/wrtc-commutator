@@ -72,6 +72,37 @@ func SendAnswer(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 	return Dial(string(to), msg)
 }
 
+func SendCandidates(ws *connection.Connection, args []byte) errcodes.ErrorCode {
+	if len(ws.ID) == 0 {
+		return errcodes.ERROR_CODE_NOT_ONLINE
+	}
+	to, e := parseArg(ARG_TO, &args)
+	if e != errcodes.ERROR_CODE_NONE {
+		return e
+	}
+	p, e := parseArg(ARG_WITH, &args)
+	if e != errcodes.ERROR_CODE_NONE {
+		return e
+	}
+
+	s, e := parseArg(ARG_SIGN, &args)
+	if e != errcodes.ERROR_CODE_NONE {
+		return e
+	}
+
+	logger.Println(
+		"SendCandidates",
+		"to:", string(to),
+		"with:", string(p),
+	)
+
+	msg := model.NewCandidates(ws.ID, p, s)
+	if !msg.Verify(to) {
+		return errcodes.ERROR_CODE_BAD_SIGNATURE
+	}
+	return Dial(string(to), msg)
+}
+
 func Online(ws *connection.Connection, args []byte) errcodes.ErrorCode {
 	//TODO validate args
 	if len(ws.ID) > 0 {
@@ -156,7 +187,7 @@ func HexToPort(s string) (int64, error) {
 	return strconv.ParseInt(s, 16, 64)
 }
 
-func Dial(hexPort string, sdp *model.SDP) errcodes.ErrorCode {
+func Dial(hexPort string, data interface{}) errcodes.ErrorCode {
 	port, err := HexToPort(hexPort)
 	if err != nil {
 		logger.Println("cannot cast hexPort to int:", err.Error())
@@ -168,7 +199,7 @@ func Dial(hexPort string, sdp *model.SDP) errcodes.ErrorCode {
 		logger.Println("err dial:", port, errDial.Error())
 		return errcodes.ERROR_CODE_TARGET_UNACCESSABLE
 	}
-	b, errSerialize := Serialize(sdp)
+	b, errSerialize := Serialize(data)
 	if errSerialize != nil {
 		logger.Println("err serialize:", port, errSerialize.Error())
 		return errcodes.ERROR_CODE_UNKNOWN
